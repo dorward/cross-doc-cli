@@ -1,11 +1,10 @@
 #!/usr/bin/env node
 
-import { dirname } from "path";
-import { fileURLToPath } from "url";
+const {dirname} = require("path");
+const {fileURLToPath} = require("url");
+const options = require("./options.js");
 
-import options from "./options.js";
-
-import {
+const {
   get_files,
   read_files,
   parse_data,
@@ -17,12 +16,12 @@ import {
   add_title_attributes,
   replace_placeholders,
   add_table_of_contents,
-  sort as sortPromise,
+  sort:sortPromise,
   output,
-} from "cross-doc";
+} = require("cross-doc");
 
 (async () => {
-  const { sort } = await sortPromise(options);
+  const {sort} = await sortPromise(options);
   process.stderr.write("Getting files....\n");
   const files = await get_files(options);
   process.stderr.write("Reading files....\n");

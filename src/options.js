@@ -1,5 +1,5 @@
-import options from "commander";
-import path from "path";
+const options = require("commander");
+const path = require("path");
 
 const defaultProject = process.cwd();
 
@@ -28,4 +28,4 @@ const opts = {
 
 console.log({opts})
 
-export default opts; 
+module.exports = opts; 

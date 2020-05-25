@@ -1,9 +1,9 @@
 {
   "name": "cross-doc-cli",
   "version": "1.0.0",
-  "description": "",
+  "description": "Command line interface for Cross-doc",
   "main": "src/index.js",
-  "type": "module",
+  "type": "script",
   "scripts": {
     "run": "node src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
