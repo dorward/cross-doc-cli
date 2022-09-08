@@ -1,9 +1,10 @@
-const options = require('commander');
+const { Command } = require('commander');
+const program = new Command();
 const path = require('path');
 
 const defaultProject = process.cwd();
 
-options
+program
 	.option('-p, --project <directory>', 'Project directory', defaultProject)
 	.option(
 		'-b, --base_name <name>',
@@ -22,7 +23,8 @@ options
 		value.split(/\s*,\s*/)
 	);
 
-options.parse(process.argv);
+program.parse(process.argv);
+const options = program.opts();
 
 const baseName = options.base_name || `out/${path.basename(defaultProject)}`;
 
@@ -36,6 +38,6 @@ const opts = {
 	include: options.include,
 };
 
-// console.log({opts})
+console.log({ opts });
 
 module.exports = opts;
