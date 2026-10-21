@@ -1,0 +1,136 @@
+name: Validate CLI
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: '21 7 * * 1'
+  workflow_dispatch:
+    inputs:
+      pdf:
+        description: Run real PDF checks on a Prince/Poppler self-hosted runner
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  node:
+    name: ${{ matrix.os }} / Node ${{ matrix.node }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        node: ['24.22.0', '26.12.0']
+    defaults:
+      run:
+        working-directory: cli
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          path: cli
+          persist-credentials: false
+      - name: Check out latest sibling master
+        uses: actions/checkout@v7.0.1
+        with:
+          repository: dorward/cross-doc
+          # Track upstream development to detect compatibility divergence.
+          ref: master
+          path: cross-doc
+          persist-credentials: false
+      - uses: pnpm/action-setup@v6.1.0
+        with:
+          package_json_file: cli/package.json
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+          cache-dependency-path: |
+            cli/pnpm-lock.yaml
+            cross-doc/pnpm-lock.yaml
+      - name: Record tested library revision
+        run: git -C ../cross-doc log -1 --format="%H %s"
+      - name: Build sibling before installing its local snapshot
+        run: pnpm --dir ../cross-doc install --frozen-lockfile
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run check:package-manager
+      - run: pnpm run lint
+      - run: pnpm run format:check
+      - run: pnpm run typecheck
+      - run: pnpm run test:coverage
+      - run: pnpm run test:package
+      - run: pnpm audit
+      - run: pnpm audit --prod
+      - run: git diff --exit-code
+
+  audit:
+    name: Committed lockfile security audit
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v6.1.0
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version-file: .node-version
+      - name: Reject alternate lockfiles without installing dependencies
+        run: |
+          test ! -f package-lock.json
+          test ! -f npm-shrinkwrap.json
+          test ! -f yarn.lock
+      # Audit the committed graph without installing or fetching the sibling.
+      - name: Full dependency audit
+        id: full
+        continue-on-error: true
+        run: pnpm audit
+      - name: Production dependency audit
+        id: production
+        continue-on-error: true
+        run: pnpm audit --prod
+      - name: Fail if either audit failed
+        if: steps.full.outcome != 'success' || steps.production.outcome != 'success'
+        run: exit 1
+
+  pdf:
+    if: github.event_name == 'workflow_dispatch' && inputs.pdf
+    runs-on: [self-hosted, prince]
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: cli
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          path: cli
+          persist-credentials: false
+      - uses: actions/checkout@v7.0.1
+        with:
+          repository: dorward/cross-doc
+          ref: master
+          path: cross-doc
+          persist-credentials: false
+      - uses: pnpm/action-setup@v6.1.0
+        with:
+          package_json_file: cli/package.json
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version-file: cli/.node-version
+      - name: Record tested library revision
+        run: git -C ../cross-doc log -1 --format="%H %s"
+      - run: pnpm --dir ../cross-doc install --frozen-lockfile
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run test:pdf
+        env:
+          CROSS_DOC_PDF_ARTIFACTS: ${{ runner.temp }}/cross-doc-cli-pdf
+      - uses: actions/upload-artifact@v7.0.2
+        if: always()
+        with:
+          name: cli-pdf-review
+          path: ${{ runner.temp }}/cross-doc-cli-pdf
+          if-no-files-found: warn

@@ -1,21 +1,57 @@
 {
-  "name": "cross-doc-cli",
-  "version": "1.0.0",
-  "description": "Command line interface for Cross-doc",
-  "main": "src/index.js",
-  "type": "script",
-  "scripts": {
-    "run": "node src/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "engines": {
-    "node": ">=13.7"
-  },
-  "engineStrict": true,
-  "keywords": [],
-  "author": "David Dorward <david@dorward.me.uk>",
-  "dependencies": {
-    "commander": "^9.4.0",
-    "cross-doc": "file:../cross-doc"
-  }
+	"name": "cross-doc-cli",
+	"version": "2.0.0",
+	"description": "Command line interface for Cross-doc",
+	"keywords": [],
+	"license": "ISC",
+	"author": "David Dorward <david@dorward.me.uk>",
+	"bin": {
+		"cross-doc": "./dist/index.js"
+	},
+	"files": [
+		"dist"
+	],
+	"type": "module",
+	"scripts": {
+		"run": "pnpm run build && node dist/index.js",
+		"test": "pnpm run build && vitest run",
+		"check:package-manager": "node scripts/check-package-manager.cjs",
+		"test:watch": "pnpm run build && vitest",
+		"build": "node scripts/build.mjs",
+		"typecheck": "tsc --noEmit",
+		"prepare": "node scripts/build.mjs",
+		"test:coverage": "pnpm run build && vitest run --coverage",
+		"lint": "oxlint --deny-warnings .",
+		"lint:fix": "oxlint --fix --deny-warnings .",
+		"format": "oxfmt --write .",
+		"format:check": "oxfmt --check .",
+		"test:package": "node tests/check-package.mjs",
+		"test:pdf": "pnpm run build && CROSS_DOC_TEST_PRINCE=1 vitest run tests/prince.test.mjs"
+	},
+	"dependencies": {
+		"commander": "15.0.0",
+		"cross-doc": "file:../cross-doc"
+	},
+	"devDependencies": {
+		"@types/node": "24.19.2",
+		"@vitest/coverage-v8": "5.0.5",
+		"oxfmt": "0.74.0",
+		"oxlint": "1.89.0",
+		"typescript": "7.0.2",
+		"vitest": "5.0.5"
+	},
+	"bundleDependencies": [
+		"cross-doc"
+	],
+	"devEngines": {
+		"packageManager": {
+			"name": "pnpm",
+			"version": "12.14.0",
+			"onFail": "error"
+		}
+	},
+	"engines": {
+		"node": ">=24.22.0"
+	},
+	"packageManager": "pnpm@12.14.0"
 }

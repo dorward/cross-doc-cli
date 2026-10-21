@@ -1,0 +1,8 @@
+# Require review of every dependency installation script.
+strictDepBuilds: true
+allowBuilds:
+  # Sass compiles using prebuilt binaries; the optional watcher build is unnecessary.
+  '@parcel/watcher': false
+# Match the library's reviewed Sass release while keeping the default age gate.
+minimumReleaseAgeExclude:
+  - sass@1.106.0
