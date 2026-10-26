@@ -429,3 +429,30 @@ it.each([{ include: undefined }, { include: ['alice'] }])(
 			expect(await readFile(join(project, 'out', files[index]))).toEqual(before[index]);
 	},
 );
+
+it('publishes inline and metadata figures through the executable without duplicating them', async () => {
+	const { project, prince } = await fixture();
+	await writeFile(
+		join(project, 'data/alice.md'),
+		'---\ntype: person\ntitle: Alice\nfigures:\n  - file: map.svg\n    caption: Legacy\n---\n# Alice\n\nBefore.\n\n![Accessible](../resources/map.svg "Inline")\n\nAfter.',
+	);
+	const result = run([
+		'-p',
+		project,
+		'-t',
+		'default',
+		'-b',
+		'out/auto',
+		'-i',
+		'alice',
+		'--prince_binary',
+		prince,
+	]);
+	expect(result.status).toBe(0);
+	const html = await readFile(join(project, 'out/auto.html'), 'utf8');
+	expect(html.match(/<figure /g)).toHaveLength(2);
+	expect(html).toContain('fig. <span>1</span> Inline');
+	expect(html).toContain('fig. <span>2</span> Legacy');
+	const embedded = await readFile(join(project, 'out/auto-complete.html'), 'utf8');
+	expect(embedded.match(/src="data:image\/svg\+xml;base64,/g)).toHaveLength(2);
+});
