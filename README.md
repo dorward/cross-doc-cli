@@ -236,5 +236,6 @@ Configured vault projects are auto-detected through `publishing/project.json`; u
 identities (for example `notes/people/alice`) or explicitly recorded legacy aliases.
 Duplicate selections after alias resolution fail. Projects without a configuration
 keep the legacy layout, includes and output behavior. Configured CSS is generated beside
-the chosen HTML destination. Ordinary file links/Wikilinks are handled in the following
-conversion step, not by this layout change alone.
+the chosen HTML destination. Markdown file links and Wikilinks now use the shared resolver, including heading links.
+Inspection reports ambiguity candidates, missing headings, unpublished notes and
+excluded targets separately. `--fail-on-warning` also covers these link diagnostics.

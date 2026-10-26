@@ -240,3 +240,36 @@ it('inspects and selects vault-relative identities, including duplicate basename
 	expect(JSON.parse(duplicate.stdout).error).toContain('Duplicate include');
 	expect(await tree()).toEqual(before);
 });
+
+it('uses the shared resolver for file links and Wikilinks and reports heading ambiguity in JSON and text', async () => {
+	await writeFile(
+		join(project, 'data/bob.md'),
+		'---\ntype: person\ntitle: Bob\n---\n# Bob\n\n## History\n\n## History',
+	);
+	await writeFile(
+		join(project, 'data/alice.md'),
+		'---\ntype: person\ntitle: Alice\n---\n# Alice\n\n[File](bob.md#History) [[bob#History|Wiki]]',
+	);
+	const before = await tree();
+	const result = run(['--inspect', '--json', '--fail-on-warning']);
+	expect(result.status).toBe(1);
+	const diagnostics = JSON.parse(result.stdout).diagnostics;
+	expect(diagnostics.find((item) => item.code === 'ambiguous-link-target')).toEqual({
+		code: 'ambiguous-link-target',
+		severity: 'warning',
+		source: 'alice',
+		target: 'bob#History',
+		candidates: ['data/bob.md#Bob#History [1]', 'data/bob.md#Bob#History [2]'],
+	});
+	const text = run(['--check']);
+	expect(text.stderr).toContain('ambiguous target: bob#History');
+	expect(text.stderr).toContain('candidates: data/bob.md#Bob#History [1]');
+	const selected = run(['--check', '--json', '--include', 'alice']);
+	expect(JSON.parse(selected.stdout).diagnostics).toContainEqual({
+		code: 'excluded-link-target',
+		severity: 'warning',
+		source: 'alice',
+		target: 'bob',
+	});
+	expect(await tree()).toEqual(before);
+});

@@ -8,6 +8,25 @@ export function formatDiagnostics(diagnostics: readonly Diagnostic[]): string {
 			report += `${diagnostic.source} uses legacy reference: ${diagnostic.target}\n`;
 			continue;
 		}
+		if (
+			[
+				'ambiguous-link-target',
+				'unsupported-link-syntax',
+				'missing-heading-target',
+				'non-published-link-target',
+				'excluded-link-target',
+			].includes(diagnostic.code)
+		) {
+			const labels: Partial<Record<Diagnostic['code'], string>> = {
+				'ambiguous-link-target': 'ambiguous target',
+				'unsupported-link-syntax': 'unsupported link syntax',
+				'missing-heading-target': 'missing heading',
+				'non-published-link-target': 'target is outside the published collection',
+				'excluded-link-target': 'target is excluded from this output',
+			};
+			report += `${diagnostic.source}: ${labels[diagnostic.code]}: ${diagnostic.target}${diagnostic.candidates ? ` (candidates: ${diagnostic.candidates.join(', ')})` : ''}\n`;
+			continue;
+		}
 		if (diagnostic.code === 'unused-one-way-link') {
 			report += `${diagnostic.source} is marked as monoDirectionalLinks: ${diagnostic.target} but no such link exists\n`;
 			continue;

@@ -54,6 +54,7 @@ const messages: Record<CompilationStage, string> = {
 	index: 'Indexing entry identities',
 	read: 'Reading files',
 	parse: 'Parsing data',
+	resolve: 'Resolving note links',
 	clean: 'Cleaning HTML',
 	metadata: 'Adding front matter',
 	links: 'Checking links',
