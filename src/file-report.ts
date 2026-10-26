@@ -1,7 +1,7 @@
 import { stat } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { resolveProjectLayout } from 'cross-doc';
-import type { CompilationArtifact } from 'cross-doc';
+import type { CompilationArtifact, PublicationArtifact } from 'cross-doc';
 import type { CliOptions } from './command.js';
 
 interface FileState {
@@ -62,7 +62,7 @@ export async function plannedFiles(options: CliOptions): Promise<PlannedFile[]> 
 export async function fileReport(
 	files: readonly PlannedFile[],
 	failure?: { error: unknown },
-	artifacts: readonly CompilationArtifact[] = [],
+	artifacts: readonly PublicationArtifact[] = [],
 ): Promise<string> {
 	const reason = failure
 		? `compilation failed: ${message(failure.error)}`
