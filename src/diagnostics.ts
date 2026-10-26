@@ -4,6 +4,10 @@ export function formatDiagnostics(diagnostics: readonly Diagnostic[]): string {
 	let report = '';
 	let source: string | undefined;
 	for (const diagnostic of diagnostics) {
+		if (diagnostic.code === 'legacy-reference') {
+			report += `${diagnostic.source} uses legacy reference: ${diagnostic.target}\n`;
+			continue;
+		}
 		if (diagnostic.code === 'unused-one-way-link') {
 			report += `${diagnostic.source} is marked as monoDirectionalLinks: ${diagnostic.target} but no such link exists\n`;
 			continue;

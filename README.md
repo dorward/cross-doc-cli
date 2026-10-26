@@ -229,3 +229,12 @@ The CLI monitors launcher startup for up to one second, then detaches without
 killing a launcher/viewer that is still running. Successful launch submission
 does not prove the viewer loaded the PDF; errors after that startup window are
 not reported by the CLI. This does not launch Electron or change PDF generation.
+
+Configured vault projects are auto-detected through `publishing/project.json`; use
+`--config-file publishing/custom.json` for an alternative root-relative configuration.
+`--inspect` reports canonical vault-relative identities, and `--include` accepts those
+identities (for example `notes/people/alice`) or explicitly recorded legacy aliases.
+Duplicate selections after alias resolution fail. Projects without a configuration
+keep the legacy layout, includes and output behavior. Configured CSS is generated beside
+the chosen HTML destination. Ordinary file links/Wikilinks are handled in the following
+conversion step, not by this layout change alone.
