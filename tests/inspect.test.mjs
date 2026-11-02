@@ -168,3 +168,108 @@ it('searches PATH without executing Prince and rejects non-executable explicit f
 	expect(invalid.status).toBe(1);
 	expect(JSON.parse(invalid.stdout).prince.ok).toBe(false);
 });
+
+it('inspects and selects vault-relative identities, including duplicate basenames and explicit config files', async () => {
+	const { rename } = await import('node:fs/promises');
+	await mkdir(join(project, 'publishing'));
+	await rename(join(project, 'data'), join(project, 'notes'));
+	await rename(join(project, 'notes/categories.json'), join(project, 'publishing/categories.json'));
+	await rename(join(project, 'templates/index.html'), join(project, 'publishing/layout.html'));
+	await rename(join(project, 'templates'), join(project, 'publishing/themes'));
+	await rename(join(project, 'resources'), join(project, 'attachments'));
+	await mkdir(join(project, 'notes/history'));
+	await writeFile(
+		join(project, 'notes/history/alice.md'),
+		'---\ntitle: Alice\ntype: person\n---\n# Alice',
+	);
+	const config = {
+		version: 1,
+		identity: 'vault-path-v1',
+		paths: {
+			entries: 'notes',
+			attachments: 'attachments',
+			categories: 'publishing/categories.json',
+			layout: 'publishing/layout.html',
+			themes: 'publishing/themes',
+			legacyLinks: 'publishing/legacy-links.json',
+		},
+	};
+	await writeFile(join(project, 'publishing/custom.json'), JSON.stringify(config));
+	await writeFile(
+		join(project, 'publishing/legacy-links.json'),
+		JSON.stringify({
+			version: 1,
+			entries: ['alice', 'bob', 'arrival', 'departure'].map((legacySlug) => ({
+				legacySlug,
+				target: `notes/${legacySlug}`,
+			})),
+			figures: [],
+		}),
+	);
+	const before = await tree();
+	const inspected = run(['--inspect', '--json', '--config-file', 'publishing/custom.json']);
+	expect(inspected.status).toBe(0);
+	expect(JSON.parse(inspected.stdout).project.entries.map((entry) => entry.slug)).toEqual([
+		'notes/alice',
+		'notes/arrival',
+		'notes/bob',
+		'notes/departure',
+		'notes/history/alice',
+	]);
+	const selected = run([
+		'--inspect',
+		'--json',
+		'--config-file',
+		'publishing/custom.json',
+		'--include',
+		'notes/history/alice',
+	]);
+	expect(selected.status).toBe(0);
+	expect(JSON.parse(selected.stdout).project.entries).toEqual([
+		{ slug: 'notes/history/alice', title: 'Alice', category: 'person' },
+	]);
+	const duplicate = run([
+		'--check',
+		'--json',
+		'--config-file',
+		'publishing/custom.json',
+		'--include',
+		'alice,notes/alice',
+	]);
+	expect(duplicate.status).toBe(1);
+	expect(JSON.parse(duplicate.stdout).error).toContain('Duplicate include');
+	expect(await tree()).toEqual(before);
+});
+
+it('uses the shared resolver for file links and Wikilinks and reports heading ambiguity in JSON and text', async () => {
+	await writeFile(
+		join(project, 'data/bob.md'),
+		'---\ntype: person\ntitle: Bob\n---\n# Bob\n\n## History\n\n## History',
+	);
+	await writeFile(
+		join(project, 'data/alice.md'),
+		'---\ntype: person\ntitle: Alice\n---\n# Alice\n\n[File](bob.md#History) [[bob#History|Wiki]]',
+	);
+	const before = await tree();
+	const result = run(['--inspect', '--json', '--fail-on-warning']);
+	expect(result.status).toBe(1);
+	const diagnostics = JSON.parse(result.stdout).diagnostics;
+	expect(diagnostics.find((item) => item.code === 'ambiguous-link-target')).toEqual({
+		code: 'ambiguous-link-target',
+		severity: 'warning',
+		source: 'alice',
+		target: 'bob#History',
+		candidates: ['data/bob.md#Bob#History [1]', 'data/bob.md#Bob#History [2]'],
+	});
+	const text = run(['--check']);
+	expect(text.stderr).toContain('ambiguous target: bob#History');
+	expect(text.stderr).toContain('candidates: data/bob.md#Bob#History [1]');
+	const selected = run(['--check', '--json', '--include', 'alice']);
+	expect(JSON.parse(selected.stdout).diagnostics).toContainEqual({
+		code: 'excluded-link-target',
+		severity: 'warning',
+		source: 'alice',
+		target: 'bob',
+	});
+	expect(await tree()).toEqual(before);
+});

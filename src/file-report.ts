@@ -1,6 +1,7 @@
 import { stat } from 'node:fs/promises';
-import { resolve } from 'node:path';
-import type { CompilationArtifact } from 'cross-doc';
+import { dirname, resolve } from 'node:path';
+import { resolveProjectLayout } from 'cross-doc';
+import type { CompilationArtifact, PublicationArtifact } from 'cross-doc';
 import type { CliOptions } from './command.js';
 
 interface FileState {
@@ -43,8 +44,14 @@ async function inspect(path: string): Promise<Inspection> {
 }
 
 export async function plannedFiles(options: CliOptions): Promise<PlannedFile[]> {
+	const layout = await resolveProjectLayout(options);
+	const css =
+		options.css_file_name ??
+		(layout.identity === 'vault-path-v1'
+			? resolve(dirname(options.html_file_name), 'cross-doc.css')
+			: resolve(options.project, 'templates/index.css'));
 	const files: { kind: CompilationArtifact['kind']; label: string; path: string }[] = [
-		{ kind: 'css', label: 'CSS', path: resolve(options.project, 'templates/index.css') },
+		{ kind: 'css', label: 'CSS', path: css },
 		{ kind: 'html', label: 'HTML', path: options.html_file_name },
 		{ kind: 'pdf', label: 'PDF', path: options.pdf_file_name },
 		{ kind: 'embedded-html', label: 'Embedded HTML', path: options.embedded_html_file_name },
@@ -55,7 +62,7 @@ export async function plannedFiles(options: CliOptions): Promise<PlannedFile[]> 
 export async function fileReport(
 	files: readonly PlannedFile[],
 	failure?: { error: unknown },
-	artifacts: readonly CompilationArtifact[] = [],
+	artifacts: readonly PublicationArtifact[] = [],
 ): Promise<string> {
 	const reason = failure
 		? `compilation failed: ${message(failure.error)}`

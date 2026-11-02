@@ -50,8 +50,11 @@ export async function compile(options: CliOptions, { stderr }: Diagnostics): Pro
 
 const messages: Record<CompilationStage, string> = {
 	discover: 'Getting files',
+	inspect: 'Inspecting project configuration',
+	index: 'Indexing entry identities',
 	read: 'Reading files',
 	parse: 'Parsing data',
+	resolve: 'Resolving note links',
 	clean: 'Cleaning HTML',
 	metadata: 'Adding front matter',
 	links: 'Checking links',

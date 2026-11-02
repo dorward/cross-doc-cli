@@ -32,6 +32,7 @@ interface SuppliedOptions {
 	failOnWarning?: boolean;
 	checkPrince?: boolean;
 	project?: string;
+	configFile?: string;
 	base_name?: string;
 	html_file_name?: string;
 	embedded_html_file_name?: string;
@@ -84,6 +85,10 @@ export function parseArguments(
 			'Also check Prince availability without invoking it (inspection/check only)',
 		)
 		.option('-p, --project <directory>', 'Project directory (default: current directory)')
+		.option(
+			'--config-file <file>',
+			'Vault-root-relative project configuration (default: auto-detect publishing/project.json)',
+		)
 		.option('-b, --base_name <name>', 'Output basename (default: out/<project-directory-name>)')
 		.option('-H, --html_file_name <file>', 'HTML output file')
 		.option('-e, --embedded_html_file_name <file>', 'Embedded HTML output file')
@@ -91,7 +96,7 @@ export function parseArguments(
 		.option('-t, --theme <name>', 'Theme name', 'A5')
 		.option(
 			'-i, --include <items>',
-			'Comma-separated library slugs (default: everything)',
+			'Comma-separated entry identities or legacy slugs (default: everything)',
 			includeSlugs,
 		)
 		.option('--prince_binary <file>', 'Prince executable path (default: prince on PATH)')
@@ -132,6 +137,7 @@ export function parseArguments(
 			kind: 'read',
 			options: {
 				mode: supplied.inspect ? 'inspect' : 'check',
+				...(supplied.configFile === undefined ? {} : { configFile: supplied.configFile }),
 				project,
 				cwd,
 				json: supplied.json ?? false,
@@ -157,6 +163,7 @@ export function parseArguments(
 		pdf_file_name: resolve(project, supplied.pdf_file_name ?? `${baseName}.pdf`),
 		theme: supplied.theme,
 	};
+	if (supplied.configFile !== undefined) options.configFile = supplied.configFile;
 	if (supplied.openPdf) options.openPdf = true;
 	if (supplied.include !== undefined) options.include = supplied.include;
 	if (supplied.prince_binary !== undefined) {

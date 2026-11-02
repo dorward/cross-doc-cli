@@ -8,6 +8,7 @@ import { formatDiagnostics } from './diagnostics.js';
 export interface ReadOptions {
 	mode: 'inspect' | 'check';
 	project: string;
+	configFile?: string;
 	cwd: string;
 	json: boolean;
 	failOnWarning: boolean;
@@ -55,6 +56,7 @@ export async function inspect(
 		loaded = await loadProject(
 			{
 				project: options.project,
+				...(options.configFile === undefined ? {} : { configFile: options.configFile }),
 				...(options.include === undefined ? {} : { include: options.include }),
 			},
 			{
