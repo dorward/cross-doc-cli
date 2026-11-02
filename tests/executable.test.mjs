@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
 const executable = fileURLToPath(new URL('../dist/index.js', import.meta.url));
+const { version } = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
 const temporary = [];
 afterEach(async () => {
 	await Promise.all(temporary.splice(0).map((path) => rm(path, { recursive: true, force: true })));
@@ -44,7 +45,7 @@ function run(argv, cwd, timeout = 15000) {
 
 it.each([
 	['--help', 'Usage:'],
-	['--version', '3.0.0'],
+	['--version', version],
 ])('executes %s without a valid project or Prince', (flag, text) => {
 	const result = run(['-p', '/missing-cross-doc-project', flag]);
 	expect(result.status).toBe(0);
