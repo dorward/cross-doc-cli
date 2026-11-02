@@ -44,7 +44,7 @@ function run(argv, cwd, timeout = 15000) {
 
 it.each([
 	['--help', 'Usage:'],
-	['--version', '2.0.0'],
+	['--version', '3.0.0'],
 ])('executes %s without a valid project or Prince', (flag, text) => {
 	const result = run(['-p', '/missing-cross-doc-project', flag]);
 	expect(result.status).toBe(0);
